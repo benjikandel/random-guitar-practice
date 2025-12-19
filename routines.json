@@ -1,0 +1,29 @@
+{
+  "routines": [
+    {
+      "id": 1,
+      "name": "Warm-up Chromatics",
+      "description": "5 minutes of 1-2-3-4 chromatic patterns up and down the neck",
+      "category": "Warm-up",
+      "in_draw": true,
+      "done": false
+    },
+    {
+      "id": 2,
+      "name": "Major Scale Positions",
+      "description": "Play two-octave major scale in 5 positions with a metronome",
+      "category": "Scales",
+      "in_draw": true,
+      "done": false
+    },
+    {
+      "id": 3,
+      "name": "Chord Changes",
+      "description": "Practice G-C-D clean switches for 3 minutes",
+      "category": "Rhythm",
+      "in_draw": true,
+      "done": false
+    }
+  ],
+  "next_id": 4
+}
