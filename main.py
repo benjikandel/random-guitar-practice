@@ -2,26 +2,68 @@ import json
 import random
 from pathlib import Path
 import streamlit as st
+from supabase import create_client, Client
 
 
+# Initialize Supabase client
+@st.cache_resource
+def get_supabase_client() -> Client:
+    """Create and cache the Supabase client."""
+    supabase_url = st.secrets.get("SUPABASE_URL")
+    supabase_key = st.secrets.get("SUPABASE_KEY")
+    
+    if not supabase_url or not supabase_key:
+        # Fallback to local file storage if secrets not configured
+        return None
+    
+    return create_client(supabase_url, supabase_key)
+
+
+supabase = get_supabase_client()
 data_file = Path(__file__).with_name("routines.json")
 
 
 def load_data():
-    if not data_file.exists():
-        return None
-    try:
-        data = json.loads(data_file.read_text())
-        if isinstance(data, dict) and "routines" in data and "next_id" in data:
-            return data
-    except Exception:
-        st.warning("Could not read routines.json, starting with defaults.")
+    """Load data from Supabase or fallback to local file."""
+    if supabase:
+        try:
+            response = supabase.table("routines_data").select("*").eq("id", 1).execute()
+            if response.data and len(response.data) > 0:
+                data = response.data[0].get("data")
+                if isinstance(data, dict) and "routines" in data and "next_id" in data:
+                    return data
+        except Exception as e:
+            st.warning(f"Could not read from Supabase: {e}. Using defaults.")
+    else:
+        # Fallback to local file
+        if data_file.exists():
+            try:
+                data = json.loads(data_file.read_text())
+                if isinstance(data, dict) and "routines" in data and "next_id" in data:
+                    return data
+            except Exception:
+                st.warning("Could not read routines.json, starting with defaults.")
+    
     return None
 
 
 def persist_state():
+    """Persist state to Supabase or local file."""
     payload = {"routines": st.session_state.routines, "next_id": st.session_state.next_id}
-    data_file.write_text(json.dumps(payload, indent=2))
+    
+    if supabase:
+        try:
+            # Upsert to Supabase
+            supabase.table("routines_data").upsert({
+                "id": 1,
+                "data": payload,
+                "updated_at": "now()"
+            }).execute()
+        except Exception as e:
+            st.error(f"Failed to save to Supabase: {e}")
+    else:
+        # Fallback to local file
+        data_file.write_text(json.dumps(payload, indent=2))
 
 
 DEFAULT_ROUTINES = [
